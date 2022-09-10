@@ -1,101 +1,103 @@
+from tkinter import image_names
 import telebot
 from google_images_search import GoogleImagesSearch
+from telebot import types
+import re
+import os
 
+# Keys
 bot = telebot.TeleBot("5655783257:AAGU6Mq_EAVMPTojKN8x2OnUjkCNHPMzzxI")
-
-# you can provide API key and CX using arguments,
-# or you can set environment variables: GCS_DEVELOPER_KEY, GCS_CX
 gis = GoogleImagesSearch("AIzaSyBcs9pkCQgKOmBcuV6Jte9V4JBgbsnEV4g", "8503f6ad0de1e4fa2")
 
-# define search params
-# option for commonly used search param are shown below for easy reference.
-# For param marked with '##':
-#   - Multiselect is currently not feasible. Choose ONE option only
-#   - This param can also be omitted from _search_params if you do not wish to define any value
-# _search_params = {
-#     "q": "...",
-#     "num": 10,
-#     "fileType": "jpg|gif|png",
-#     "rights": "cc_publicdomain|cc_attribute|cc_sharealike|cc_noncommercial|cc_nonderived",
-#     "safe": "active|high|medium|off|safeUndefined",  ##
-#     "imgType": "clipart|face|lineart|stock|photo|animated|imgTypeUndefined",  ##
-#     "imgSize": "huge|icon|large|medium|small|xlarge|xxlarge|imgSizeUndefined",  ##
-#     "imgDominantColor": "black|blue|brown|gray|green|orange|pink|purple|red|teal|white|yellow|imgDominantColorUndefined",  ##
-#     "imgColorType": "color|gray|mono|trans|imgColorTypeUndefined",  ##
-# }
+# Constants
+PATH_TO_DIR = "{}temp\\".format(re.sub(r"bot.py", "", __file__))
 
-# this will only search for images:
-# gis.search(search_params=_search_params)
-
-# this will search and download:
-# gis.search(search_params=_search_params, path_to_dir="/path/")
-
-# this will search, download and resize:
-# gis.search(search_params=_search_params, path_to_dir="/path/", width=500, height=500)
-
-# search first, then download and resize afterwards:
-# gis.search(search_params=_search_params)
-# for image in gis.results():
-# image.url # image direct url
-
-# image.referrer_url  # image referrer url (source)
-
-# image.download("/path/")  # download image
-# image.resize(500, 500)  # resize downloaded image
-
-# image.path  # downloaded local file path
-
-searchParams = {"q": "...", "num": 0, "safe": "off", "fileType": "jpg"}
+searchParams = {
+    "q": "!default!",
+    "num": 0,
+    "safe": "off",
+    "fileType": "jpg",
+    "imgSize": "xlarge",
+}
 isFirst = True
+userFirstMessage = None
 
 
 @bot.message_handler(content_types=["text", "document", "audio"])
 def start(message):
-    # if message.text == "Привет":
-    #     bot.send_message(message.from_user.id, "Привет, чем я могу тебе помочь?")
-    # elif message.text == "/help":
-    #     bot.send_message(message.from_user.id, "Напиши привет")
-    # else:
-    #     bot.send_message(message.from_user.id, "Я тебя не понимаю. Напиши /help.")
-    global isFirst
+
+    global isFirst, userFirstMessage
     if isFirst:
-        bot.send_message(
-            message.from_user.id,
-            "Hello, I'm your search-pic bot. Write your requst...",
-        )
+        bot.send_message(message.from_user.id, "Hello, I'm your bot:)")
+        userFirstMessage = message
         isFirst = False
-    else:
-        bot.send_message(message.from_user.id, "Write your requst...")
 
-    bot.register_next_step_handler(message, get_request)
+    menu(message)
 
 
-def get_request(message):
+def menu(message):
+    keyboard = types.InlineKeyboardMarkup()
+    key_image = types.InlineKeyboardButton(text="Image search", callback_data="image")
+    keyboard.add(key_image)
+    bot.send_message(
+        message.from_user.id, "Select a function from below.", reply_markup=keyboard
+    )
+
+
+def get_query_for_image(message):
+    bot.send_message(message.from_user.id, "Write your query...")
+    bot.register_next_step_handler(message, get_amount_for_image)
+
+
+def get_amount_for_image(message):
+
     global searchParams
     searchParams["q"] = message.text
-    bot.send_message(message.from_user.id, "Write amount of images...")
-    bot.register_next_step_handler(message, get_amount)
+
+    keyboard = types.InlineKeyboardMarkup()
+    key_1 = types.InlineKeyboardButton(text="1", callback_data="image1")
+    keyboard.add(key_1)
+    key_5 = types.InlineKeyboardButton(text="5", callback_data="image5")
+    keyboard.add(key_5)
+    key_10 = types.InlineKeyboardButton(text="10", callback_data="image10")
+    keyboard.add(key_10)
+    key_20 = types.InlineKeyboardButton(text="20", callback_data="image20")
+    keyboard.add(key_20)
+    key_50 = types.InlineKeyboardButton(text="50", callback_data="image50")
+    keyboard.add(key_50)
+    key_100 = types.InlineKeyboardButton(text="100", callback_data="image100")
+    keyboard.add(key_100)
+    bot.send_message(
+        message.from_user.id, "Select amount of images...", reply_markup=keyboard
+    )
 
 
-def get_amount(message):
-    # keyboard = types.InlineKeyboardMarkup(); #наша клавиатура
-    #   key_yes = types.InlineKeyboardButton(text='Да', callback_data='yes'); #кнопка «Да»
-    #   keyboard.add(key_yes); #добавляем кнопку в клавиатуру
-    #   key_no= types.InlineKeyboardButton(text='Нет', callback_data='no');
-    #   keyboard.add(key_no);
-    #   question = 'Тебе '+str(age)+' лет, тебя зовут '+name+' '+surname+'?';
-    #   bot.send_message(message.from_user.id, text=question, reply_markup=keyboard)
-    global searchParams
-    try:
-        searchParams["num"] = int(message.text)
-    except:
-        bot.send_message(message.from_user.id, "Please, write a NUMBER.")
-        bot.register_next_step_handler(message, get_request)
-    else:
-        gis.search(search_params=searchParams)
-        for image in gis.results():
-            bot.send_message(message.from_user.id, image.url)
-        bot.register_next_step_handler(message, start)
+def show_images(message):
+    global searchParams, PATH_TO_DIR
+    gis.search(search_params=searchParams, path_to_dir=PATH_TO_DIR)
+
+    for image in gis.results():
+        with open(image.path, "rb") as file:
+            bot.send_photo(message.from_user.id, file)
+        if os.path.exists(image.path):
+            os.remove(image.path)
+            print(
+                "Image was sended and removed from temp storage: {}".format(image.path)
+            )
+    menu(message)
+
+
+@bot.callback_query_handler(func=lambda call: True)
+def callback_worker(call):
+    global searchParams, userFirstMessage
+    if userFirstMessage == None:
+        pass
+    elif call.data == "image":
+        get_query_for_image(userFirstMessage)
+    elif call.data.find("image") != -1 and searchParams.get("q") != "!default!":
+        amount = int(re.sub(r"image", "", call.data))
+        searchParams["num"] = amount
+        show_images(userFirstMessage)
 
 
 bot.polling(none_stop=True, interval=0)
