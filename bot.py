@@ -4,6 +4,7 @@ from google_images_search import GoogleImagesSearch
 from telebot import types
 import re
 import os
+import wikipediaapi
 
 # Keys
 bot = telebot.TeleBot("5655783257:AAGU6Mq_EAVMPTojKN8x2OnUjkCNHPMzzxI")
@@ -39,6 +40,8 @@ def menu(message):
     keyboard = types.InlineKeyboardMarkup()
     key_image = types.InlineKeyboardButton(text="Image search", callback_data="image")
     keyboard.add(key_image)
+    key_wiki = types.InlineKeyboardButton(text="Wikipedia search", callback_data="wiki")
+    keyboard.add(key_wiki)
     bot.send_message(
         message.from_user.id, "Select a function from below.", reply_markup=keyboard
     )
@@ -47,6 +50,28 @@ def menu(message):
 def get_query_for_image(message):
     bot.send_message(message.from_user.id, "Write your query...")
     bot.register_next_step_handler(message, get_amount_for_image)
+
+
+def get_query_for_wiki(message):
+    bot.send_message(message.from_user.id, "Write your query...")
+    bot.register_next_step_handler(message, show_wiki)
+
+
+def show_wiki(message):
+    mask = r"[А-Яа-яЁё]{1,}"  # russian check
+    wiki = None
+
+    if re.fullmatch(mask, message.text):
+        wiki = wikipediaapi.Wikipedia("ru")
+    else:
+        wiki = wikipediaapi.Wikipedia("en")
+
+    page = wiki.page(message.text)
+    if page.exists():
+        bot.send_message(message.from_user.id, page.summary)
+    else:
+        bot.send_message(message.from_user.id, "Page didn't.")
+    menu(message)
 
 
 def get_amount_for_image(message):
@@ -98,6 +123,8 @@ def callback_worker(call):
         amount = int(re.sub(r"image", "", call.data))
         searchParams["num"] = amount
         show_images(userFirstMessage)
+    elif call.data == "wiki":
+        get_query_for_wiki(userFirstMessage)
 
 
 bot.polling(none_stop=True, interval=0)
