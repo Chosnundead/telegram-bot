@@ -5,6 +5,8 @@ from telebot import types
 import re
 import os
 import wikipediaapi
+import modules.tic_tac_toe as game
+
 
 # Keys
 bot = telebot.TeleBot("5655783257:AAGU6Mq_EAVMPTojKN8x2OnUjkCNHPMzzxI")
