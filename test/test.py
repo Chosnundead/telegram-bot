@@ -15,3 +15,16 @@
 # game = tic_tac_toe.Game()
 # game.start()
 #####################
+# import sqlite3 as sq
+# import pathlib
+
+# pathToDB = "{}\\db\\test.db".format(pathlib.Path(__file__).parents[0])
+# with sq.connect(pathToDB) as db:
+#     cursor = db.cursor()
+#     cursor.execute(
+#         """CREATE TABLE IF NOT EXISTS users (
+#         id INTEGER NOT NULL PRIMARY KEY,
+#         query TEXT
+#     )"""
+#     )
+#####################
